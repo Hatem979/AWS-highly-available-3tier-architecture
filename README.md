@@ -36,13 +36,18 @@ The architecture is distributed across two Availability Zones and uses separate 
 
 ## Network Architecture
 
-The application is deployed inside an Amazon VPC with a CIDR block of `10.0.0.0/16`.
+The VPC uses a `10.0.0.0/16` CIDR block and spans two Availability Zones.
 
-The VPC spans two Availability Zones and contains six subnets:
+The network is divided into six subnets across three tiers: Public, Application, and Database.
 
-- 2 Public Subnets
-- 2 Private Application Subnets
-- 2 Private Database Subnets
+| **Tier** | **Subnet Name** | **AZ** | **CIDR Block** | **Routing & Access** |
+|---|---|---|---|---|
+| **Public** | `Public-Subnet-A` | `us-east-1a` | `10.0.1.0/24` | IGW Route, ALB, NAT Gateway A |
+| **Public** | `Public-Subnet-B` | `us-east-1b` | `10.0.2.0/24` | IGW Route, ALB, NAT Gateway B |
+| **App** | `Private-App-A` | `us-east-1a` | `10.0.11.0/24` | NAT GW-A Route, EC2, VPC Endpoints |
+| **App** | `Private-App-B` | `us-east-1b` | `10.0.12.0/24` | NAT GW-B Route, EC2, VPC Endpoints |
+| **Database** | `Private-DB-A` | `us-east-1a` | `10.0.21.0/24` | Local Route Only, RDS Primary |
+| **Database** | `Private-DB-B` | `us-east-1b` | `10.0.22.0/24` | Local Route Only, RDS Standby |
 
 ### Availability Zone A
 
@@ -62,7 +67,7 @@ The public subnets contain the internet-facing infrastructure, while the applica
 
 The main application traffic follows this path:
 
-
+```text
 User
   |
 Route 53
@@ -80,7 +85,7 @@ AWS WAF is associated with CloudFront to inspect and filter incoming web request
 
 Application servers can also communicate with AWS services through private connectivity:
 
-
+```text
 EC2
   |
   +----> S3 Gateway VPC Endpoint ----> Amazon S3
@@ -127,7 +132,7 @@ The database is deployed in private subnets and is accessible only from the appl
 
 Security Groups enforce controlled communication between the different tiers:
 
-
+```text
 Internet
    |
 CloudFront + WAF
@@ -140,6 +145,13 @@ Database Security Group
    |
 RDS
 ```
+### Security Group Rule Matrix
+
+| Security Group | Inbound Rules | Outbound Rules | Purpose |
+| :--- | :--- | :--- | :--- |
+| `ALB-SG` | HTTPS (443) from CloudFront IP prefix / WAF | App Port (8080/80) to `APP-SG` | Controlled entry point |
+| `APP-SG` | App Port from `ALB-SG` | Port 3306 to `DB-SG` + HTTPS to VPC Endpoints | Compute isolation |
+| `DB-SG` | MySQL/Aurora (3306) from `APP-SG` | None | Fully isolated storage |
 
 ## IAM and Secrets Management
 
@@ -155,7 +167,7 @@ Amazon S3 is used for object storage.
 
 The application accesses S3 through an S3 Gateway VPC Endpoint:
 
-
+```text
 EC2
   |
 S3 Gateway VPC Endpoint
@@ -165,7 +177,7 @@ Amazon S3
 
 AWS Secrets Manager is accessed through an Interface VPC Endpoint:
 
-
+```text
 EC2
   |
 Secrets Manager Interface VPC Endpoint
@@ -194,7 +206,7 @@ CloudWatch Alarms can send notifications through Amazon SNS.
 
 The monitoring flow is:
 
-
+```text
 CloudWatch Metrics
        |
        v
@@ -206,6 +218,17 @@ SNS Topic
        v
 Email Notification
 ```
+
+## Failure Testing & Validation Results
+To verify high availability and operational resilience, the infrastructure was subjected to manual failure scenarios:
+
+EC2 Node Termination Test: Terminated an active EC2 instance in AZ-A. ALB health checks marked the instance unhealthy within 15 seconds, redirected 100% of traffic to AZ-B, and ASG provisioned a replacement instance automatically.
+
+Auto-Scaling Stress Test: Generated artificial load on instances. CPU utilization crossed the 70% threshold, triggering CloudWatch Alarms to scale out the ASG from 2 to 4 instances.
+
+RDS Multi-AZ Failover Test: Initiated a forced failover on the primary database. RDS switched DNS endpoint resolution to the standby instance in AZ-B automatically with zero application code modifications.
+
+WAF Attack Simulation: Generated malicious request signatures. AWS WAF intercepted and blocked the requests at the CloudFront edge layer (HTTP 403 Forbidden) before reaching the ALB.
 
 ## Key Architecture Decisions
 
@@ -263,5 +286,14 @@ This project demonstrates practical knowledge of:
 ## Conclusion
 
 This project demonstrates a traditional 3-tier web application architecture designed for high availability, scalability, security, and operational visibility on AWS.
+
+## Future Enhancements
+Infrastructure as Code (IaC): Modularize the entire architecture using Terraform or AWS CDK.
+
+CI/CD Automation: Build GitHub Actions pipelines for automated AMI baking and zero-downtime rolling deployments.
+
+Centralized Operations: Implement AWS Systems Manager (SSM) Session Manager to eliminate SSH key management.
+
+Containerization: Migrate compute workloads from bare EC2 instances to Amazon ECS on AWS Fargate.
 
 The architecture separates the application layers while using multiple Availability Zones, private networking, managed AWS services, and layered security controls to create a resilient and maintainable cloud architecture.
