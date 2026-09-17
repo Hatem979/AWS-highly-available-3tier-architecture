@@ -286,6 +286,7 @@ This project demonstrates practical knowledge of:
 ## Conclusion
 
 This project demonstrates a traditional 3-tier web application architecture designed for high availability, scalability, security, and operational visibility on AWS.
+The architecture separates the application layers while using multiple Availability Zones, private networking, managed AWS services, and layered security controls to create a resilient and maintainable cloud architecture.
 
 ## Future Enhancements
 * Infrastructure as Code (IaC): Modularize the entire architecture using Terraform or AWS CDK.
@@ -296,4 +297,3 @@ This project demonstrates a traditional 3-tier web application architecture desi
 
 * Containerization: Migrate compute workloads from bare EC2 instances to Amazon ECS on AWS Fargate.
 
-The architecture separates the application layers while using multiple Availability Zones, private networking, managed AWS services, and layered security controls to create a resilient and maintainable cloud architecture.
