@@ -220,15 +220,15 @@ Email Notification
 ```
 
 ## Failure Testing & Validation Results
-To verify high availability and operational resilience, the infrastructure was subjected to manual failure scenarios:
+## To verify high availability and operational resilience, the infrastructure was subjected to manual failure scenarios:
 
-EC2 Node Termination Test: Terminated an active EC2 instance in AZ-A. ALB health checks marked the instance unhealthy within 15 seconds, redirected 100% of traffic to AZ-B, and ASG provisioned a replacement instance automatically.
+1. EC2 Node Termination Test: Terminated an active EC2 instance in AZ-A. ALB health checks marked the instance unhealthy within 15 seconds, redirected 100% of traffic to AZ-B, and ASG provisioned a replacement instance automatically.
 
-Auto-Scaling Stress Test: Generated artificial load on instances. CPU utilization crossed the 70% threshold, triggering CloudWatch Alarms to scale out the ASG from 2 to 4 instances.
+2. Auto-Scaling Stress Test: Generated artificial load on instances. CPU utilization crossed the 70% threshold, triggering CloudWatch Alarms to scale out the ASG from 2 to 4 instances.
 
-RDS Multi-AZ Failover Test: Initiated a forced failover on the primary database. RDS switched DNS endpoint resolution to the standby instance in AZ-B automatically with zero application code modifications.
+3. RDS Multi-AZ Failover Test: Initiated a forced failover on the primary database. RDS switched DNS endpoint resolution to the standby instance in AZ-B automatically with zero application code modifications.
 
-WAF Attack Simulation: Generated malicious request signatures. AWS WAF intercepted and blocked the requests at the CloudFront edge layer (HTTP 403 Forbidden) before reaching the ALB.
+4. WAF Attack Simulation: Generated malicious request signatures. AWS WAF intercepted and blocked the requests at the CloudFront edge layer (HTTP 403 Forbidden) before reaching the ALB.
 
 ## Key Architecture Decisions
 
@@ -288,12 +288,12 @@ This project demonstrates practical knowledge of:
 This project demonstrates a traditional 3-tier web application architecture designed for high availability, scalability, security, and operational visibility on AWS.
 
 ## Future Enhancements
-Infrastructure as Code (IaC): Modularize the entire architecture using Terraform or AWS CDK.
+* Infrastructure as Code (IaC): Modularize the entire architecture using Terraform or AWS CDK.
 
-CI/CD Automation: Build GitHub Actions pipelines for automated AMI baking and zero-downtime rolling deployments.
+* CI/CD Automation: Build GitHub Actions pipelines for automated AMI baking and zero-downtime rolling deployments.
 
-Centralized Operations: Implement AWS Systems Manager (SSM) Session Manager to eliminate SSH key management.
+* Centralized Operations: Implement AWS Systems Manager (SSM) Session Manager to eliminate SSH key management.
 
-Containerization: Migrate compute workloads from bare EC2 instances to Amazon ECS on AWS Fargate.
+* Containerization: Migrate compute workloads from bare EC2 instances to Amazon ECS on AWS Fargate.
 
 The architecture separates the application layers while using multiple Availability Zones, private networking, managed AWS services, and layered security controls to create a resilient and maintainable cloud architecture.
